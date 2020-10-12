@@ -290,8 +290,8 @@ void RBT_traverse_inorder(RBTree tree, RBTreeNode node, RBTreeVisitFunc visit){
     }
 }
 
-void BT_inorder(RBTree tree, RBTreeVisitFunc visit){
-    BT_traverse_inorder(tree, BT_root(tree), visit);
+void RBT_inorder(RBTree tree, RBTreeVisitFunc visit){
+    RBT_traverse_inorder(tree, BT_root(tree), visit);
 }
 
 void RBT_traverse_postorder(RBTree tree, RBTreeNode node, RBTreeVisitFunc visit){
@@ -312,4 +312,15 @@ void FreeNode(RBTree tree, RBTreeNode node){
 
 void RBT_destroy(RBTree tree){
     RBT_postorder(tree, FreeNode);
+}
+
+void printFunc(RBTree tree, RBTreeNode node){
+    if(node->colour == 'r')
+        printf("\033%d\033[0m", node->item);
+    else
+        printf("%d", node->item);
+}
+
+void RBT_print(RBTree tree){
+    RBT_inorder(tree, printFunc);
 }
