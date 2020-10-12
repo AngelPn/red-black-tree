@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -24,7 +25,7 @@ RBTree RBT_create(){
     return tree;
 }
 
-int BTIsNil(RBTreeNode node){
+int RBTisNil(RBTreeNode node){
 	if (node == NULL) return 1;
 	else return 0;
 }
@@ -34,7 +35,7 @@ int RBT_size(RBTree tree){
 }
 
 int maxDepth(RBTree tree, RBTreeNode node){
-    if(RBTIsNil(node)) return 0;
+    if(RBTisNil(node)) return 0;
 	else{
 		int LeftDepth= maxDepth(tree, node->left); /*Find the height of left subtree recursively*/
 		int RightDepth= maxDepth(tree, node->right); /*Find the height od right subtree recursively*/
@@ -45,7 +46,7 @@ int maxDepth(RBTree tree, RBTreeNode node){
 }
 
 int RBT_height(RBTree tree){
-    if(RBTIsNil(tree->root) ){
+    if(RBTisNil(tree->root) ){
 		printf("Error! The tree is empty\n");
 		exit(EXIT_FAILURE);
 	}
@@ -77,7 +78,7 @@ void RBT_set_item(RBTree tree, RBTreeNode node, int item){
 }
 
 void RBT_insert_root(RBTree tree, int item){
-    if (!RBTIsNil(tree->root)){
+    if (!RBTisNil(tree->root)){
 		printf("Error! Root is not empty");
 		return;
 	}
@@ -93,9 +94,9 @@ void RBT_insert_root(RBTree tree, int item){
 }
 
 RBTreeNode RBT_insert_left(RBTree tree, RBTreeNode node, int item, char colour){
-    if (!RBTIsNil(node->left)){
+    if (!RBTisNil(node->left)){
 		printf("Error! ChildLeft of the node is not empty\n");
-		return;
+		return NULL;
 	}
 	(tree->size)++; /*Increase the size*/
 	node->left = malloc(sizeof(struct RB_tree_node)); /*Allocate memory for a new node*/
@@ -108,9 +109,9 @@ RBTreeNode RBT_insert_left(RBTree tree, RBTreeNode node, int item, char colour){
 }
 
 RBTreeNode RBT_insert_right(RBTree tree, RBTreeNode node, int item, char colour){
-    if (!RBTIsNil(node->right)){
+    if (!RBTisNil(node->right)){
 		printf("Error! ChildRight of the node is not empty\n");
-		return;
+		return NULL;
 	}
 	(tree->size)++; /*Increase the size*/
 	node->right = malloc(sizeof(struct RB_tree_node)); /*Allocate memory for a new node*/
@@ -128,13 +129,17 @@ void left_rotate(RBTree tree, RBTreeNode node){
     node->right = y->left;
 
     /*Update y's subtree parent pointer*/
-    if(!RBTisNil(y->left->parent))
-        y->left->parent = node;
+    if(!RBTisNil(y->left)){
+        if(!RBTisNil(y->left->parent))
+            y->left->parent = node;
+        else
+            y->right = NULL;
+    }
     
     y->parent = node->parent;
 
     /*Turn node's parent into y's parent*/
-    if(BTisNil(RBT_parent(node)))
+    if(RBTisNil(RBT_parent(node)))
         tree->root = y;
     else if(node == node->parent->left)
         node->parent->left = y;
@@ -153,13 +158,17 @@ void right_rotate(RBTree tree, RBTreeNode node){
     node->left = y->right;
 
     /*Update y's subtree parent pointer*/
-    if(!RBTisNil(y->right->parent))
-        y->right->parent = node;
+    if(!RBTisNil(y->right)){
+        if(!RBTisNil(y->right->parent))
+            y->right->parent = node;
+        else
+            node->left = NULL;
+    }
     
     y->parent = node->parent;
 
     /*Turn node's parent into y's parent*/
-    if(BTisNil(RBT_parent(node)))
+    if(RBTisNil(RBT_parent(node)))
         tree->root = y;
     else if(node == node->parent->left)
         node->parent->left = y;
@@ -175,13 +184,21 @@ void RBT_insert_fixup(RBTree tree, RBTreeNode node){
 
     /*Make sure node is not root, node's grandparent is not NULL and node's parent is RED*/
     while(node != RBT_root(tree) && RBT_parent(node->parent) != NULL && RBT_parent(node)->colour == 'r'){
-        
-        /*Find node's uncle*/
+        printf("fixup\n");
+        /*Find node's uncle: make sure there is an uncle*/
         RBTreeNode uncle = NULL;
-        if(RBT_parent(node)->item == RBT_parent(node)->parent->left->item)
-            uncle = RBT_parent(node)->parent->right;
-        else
-            uncle = RBT_parent(node)->parent->left;
+
+        if(!RBTisNil(RBT_parent(node)->parent->left) && !RBTisNil(RBT_parent(node)->parent->right)){
+            if(RBT_parent(node)->item == RBT_parent(node)->parent->left->item)
+                uncle = RBT_parent(node)->parent->right;
+            else
+                uncle = RBT_parent(node)->parent->left;
+        }
+        else{ /*If uncle is NULL, change colour of node as BLACK and return*/
+            printf("uncle is NULL\n");
+            node->colour = 'b';
+            return;
+        }
 
         /*If uncle's colour is RED*/
         if(uncle->colour == 'r'){
@@ -233,13 +250,15 @@ void RBT_insert_fixup(RBTree tree, RBTreeNode node){
 
 void RBT_insert(RBTree tree, int item){
     /*If root is empty, insert root*/
-    if(RBTIsNil(RBT_root(tree))){
+    if(RBTisNil(RBT_root(tree))){
         RBT_insert_root(tree, item);
     }
     else{
+        
         /*Find a leaf node*/
         RBTreeNode current = RBT_root(tree);
         RBTreeNode leaf_node = NULL;
+        printf("item = %d\n", item);
         while(current != NULL){
             leaf_node = current;
             if(item < current->item)
@@ -247,13 +266,17 @@ void RBT_insert(RBTree tree, int item){
             else
                 current = current->right;
         }
-
+        printf("leaf->item = %d\n", leaf_node->item);
         /*The new node is added as a child of the leaf node*/
         RBTreeNode new_node = NULL;
-        if(item > leaf_node->item)
+        if(item > leaf_node->item){
             new_node = RBT_insert_right(tree, leaf_node, item, 'r');
-        else
+            printf("insert right = %d\n", new_node->item);
+        }
+        else{
             new_node = RBT_insert_left(tree, leaf_node, item, 'r');
+            printf("insert left= %d\n", new_node->item);
+        }
 
         /*Do following if color of new node's parent is not BLACK and new node is not root*/
         RBT_insert_fixup(tree, new_node);
@@ -261,7 +284,7 @@ void RBT_insert(RBTree tree, int item){
 }
 
 void RBT_remove(RBTree tree, RBTreeNode node){
-    if(!RBTIsNil(node->left) && !RBTIsNil(node->right)){
+    if(!RBTisNil(node->left) && !RBTisNil(node->right)){
         printf("Error! The node can't be removed because it has two children\n");
         return;
     }
@@ -279,7 +302,7 @@ void RBT_traverse_preorder(RBTree tree, RBTreeNode node, RBTreeVisitFunc visit){
 }
 
 void RBT_preorder(RBTree tree, RBTreeVisitFunc visit){
-    RBT_traverse_preorder(tree, BT_root(tree), visit);
+    RBT_traverse_preorder(tree, RBT_root(tree), visit);
 }
 
 void RBT_traverse_inorder(RBTree tree, RBTreeNode node, RBTreeVisitFunc visit){
@@ -291,7 +314,7 @@ void RBT_traverse_inorder(RBTree tree, RBTreeNode node, RBTreeVisitFunc visit){
 }
 
 void RBT_inorder(RBTree tree, RBTreeVisitFunc visit){
-    RBT_traverse_inorder(tree, BT_root(tree), visit);
+    RBT_traverse_inorder(tree, RBT_root(tree), visit);
 }
 
 void RBT_traverse_postorder(RBTree tree, RBTreeNode node, RBTreeVisitFunc visit){
@@ -303,7 +326,7 @@ void RBT_traverse_postorder(RBTree tree, RBTreeNode node, RBTreeVisitFunc visit)
 }
 
 void RBT_postorder(RBTree tree, RBTreeVisitFunc visit){
-    RBT_traverse_postorder(tree, BT_root(tree), visit);
+    RBT_traverse_postorder(tree, RBT_root(tree), visit);
 }
 
 void FreeNode(RBTree tree, RBTreeNode node){
@@ -316,9 +339,9 @@ void RBT_destroy(RBTree tree){
 
 void printFunc(RBTree tree, RBTreeNode node){
     if(node->colour == 'r')
-        printf("\033%d\033[0m", node->item);
+        printf("\033[1;31m%d \033[0m", node->item);
     else
-        printf("%d", node->item);
+        printf("%d ", node->item);
 }
 
 void RBT_print(RBTree tree){
