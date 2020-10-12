@@ -5,5 +5,7 @@ Data structure Red-Black Tree
 By downloading the repo, you can compile and run the program on Command Prompt:
 ```sh
 $ make
+```
+```sh
 $ ./rbt
 ```
